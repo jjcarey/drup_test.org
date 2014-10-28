@@ -1,0 +1,10 @@
+name = Easy Admin
+description = Creates a content manager menu and displays a toolbar on the top of the screen throughout the site.
+core = 7.x
+package = Administration
+configure = admin/config/easy_admin
+dependencies[] = special_menu_items
+
+version = "7.x-1.2"
+project = "easy_admin"
+

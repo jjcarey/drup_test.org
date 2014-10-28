@@ -1,0 +1,86 @@
+<?php
+
+/**
+ * @file
+ * Drupal integration with Font Awesome, the iconic font for use with Bootstrap.
+ */
+
+/**
+ * Implements hook_help().
+ */
+function fawesome_help($path, $arg) {
+  switch ($path) {
+  case 'admin/help#fawesome':
+    return '<p><i class="icon-flag icon-large"></i>' . t('<a href="@fawesome">Font Awesome</a> is an iconic font designed for use with <a href="@bootstrap">Twitter Bootstrap</a>.', array(
+      '@fawesome' => 'http://fortawesome.github.com/Font-Awesome/',
+      '@bootstrap' => 'http://twitter.github.com/bootstrap',
+    )) . '</p>';
+  }
+}
+
+/**
+ * Implements hook_init().
+ */
+function fawesome_init() {
+  fawesome_load();
+}
+
+function fawesome_sonar_css_alter(&$css){
+  // Font Awesome path replace
+  $css = str_replace('../fonts/', base_path() . drupal_get_path('module', 'fawesome') . '/fonts/', $css);
+}
+
+/**
+ * Load font awesome into a page.
+ */
+function fawesome_load(){
+  // Load up the Font Awesome CSS file.
+  if(module_exists('sonar')){
+    drupal_add_library('fawesome', 'fawesome_scss', TRUE);
+  }else{
+    drupal_add_library('fawesome', 'fawesome_css', TRUE);
+  }
+}
+
+/**
+ * Returns a list of all available fonts
+ */
+function fawesome_list(){
+  $file = file_get_contents(dirname(__FILE__) . '/assets/_icons.scss');
+  preg_match_all("/prefix\}-(.*)?:before/",$file,$matches, PREG_PATTERN_ORDER);
+  $icons = array();
+  if(!empty($matches[1])){
+    $icons = $matches[1];
+  }
+  return $icons;
+}
+
+/**
+ * Implements hook_libraries_info().
+ */
+function fawesome_library() {
+  $libraries['fawesome_scss'] = array(
+    'title' => 'Font Awesome',
+    'website' => 'http://fortawesome.github.com/Font-Awesome/',
+    'version' => '3.2.1',
+    'css' => array(
+      drupal_get_path('module', 'fawesome') . '/assets/font-awesome.scss' => array(
+        'type' => 'file',
+        'media' => 'screen',
+      ),
+    ),
+  );
+  $libraries['fawesome_css'] = array(
+    'title' => 'Font Awesome',
+    'website' => 'http://fortawesome.github.com/Font-Awesome/',
+    'version' => '3.2.1',
+    'css' => array(
+      drupal_get_path('module', 'fawesome') . '/assets/font-awesome.min.css' => array(
+        'type' => 'file',
+        'media' => 'screen',
+      ),
+    ),
+  );
+
+  return $libraries;
+}

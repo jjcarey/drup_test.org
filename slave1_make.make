@@ -26,7 +26,7 @@ projects[drupal][subdir] = ''
 ; Address Field
 projects[addressfield][version] = "1.0-beta5"
 
-; Advanced Text Formatter
+; Advanced Text Formatterf
 projects[advanced_text_formatter][version] = "1.4"
 
 ; Better Exposed Filters
@@ -105,7 +105,7 @@ projects[feeds][version] = "2.0-alpha8"
 projects[field_group][version] = "1.4"
 
 ; File entity (fieldable files)
-projects[file_entity][version] = "2.0-beta-1"
+projects[file_entity][version] = "2.0-beta1"
 
 ; Geocoder
 projects[geocoder][version] = "1.2"

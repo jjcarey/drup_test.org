@@ -1,0 +1,161 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+function sonar_menu(){
+  $items['admin/config/system/sonar'] = array(
+    'title' => 'Sonar',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('sonar_settings'),
+    'access arguments' => array('administer sonar'),
+    'file' => 'sonar.admin.inc',
+    'description' => t('Configure Sonar settings.')
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function sonar_permission() {
+  return array(
+    'administer sonar' => array(
+      'title' => t('Administer Sonar'),
+      'description' => t('Perform administration tasks for Sonar.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_css_alter().
+ */
+function sonar_css_alter(&$css) {
+  if(sonar_is_enabled() && $scss = sonar_files($css)){
+    $handler = sonar_get_handler('adapter', sonar_active_adapter());
+    if($file = $handler->build($scss)){
+      $css[$file['data']] = $file;
+    }
+  }
+}
+
+/**
+ * Picks all Sass files from an array of stylesheets.
+ *
+ * @param $css
+ *   An array of all CSS items (files and inline CSS) being requested on the page.
+ *
+ * @return
+ *   The extracted files as an array.
+ */
+function sonar_files(&$css) {
+  $files = array();
+  foreach ($css as $key => $file) {
+    if ($file['type'] == 'file') {
+      $extension = drupal_substr($file['data'], -5);
+      if (in_array($extension, array('.scss', '.sass'))) {
+        $file['syntax'] = $extension == '.scss' ? 'scss' : 'sass';
+        $files[$key] = $file;
+        // Remove from page render.
+        unset($css[$key]);
+      }
+    }
+  }
+  uasort($files, 'drupal_sort_weight');
+  return $files;
+}
+
+/**
+ * Check if Sonar is enabled.
+ */
+function sonar_is_enabled(){
+  return variable_get('sonar_status', 1);
+}
+
+/**
+ * Dubug mode enabled
+ */
+function sonar_is_debug(){
+  return variable_get('sonar_debug');
+}
+
+/**
+ * Get the currently active adapter that should be used to compile the SASS.
+ */
+function sonar_active_adapter(){
+  ctools_include('plugins');
+  $plugins = ctools_get_plugins('sonar', 'adapter');
+  // We do have a setting.
+  if($current = variable_get('sonar_adapter')){
+    // Make sure plugin is still available.
+    if(isset($plugins[$current])){
+      return $current;
+    }
+  }
+  // Default to SASSquatch.
+  return 'sassquatch';
+}
+
+/**
+ * Get Sonar destination.
+ */
+function sonar_get_destination(){
+  $destination = variable_get('sonar_destination');
+  if(empty($destination)){
+    $destination = variable_get('file_' . file_default_scheme() . '_path', conf_path() . '/files') . '/sonar';
+  }
+  return $destination;
+}
+
+/**
+ * Implements hook_ctools_plugin_api().
+ */
+function sonar_ctools_plugin_api() {
+  list($module, $api) = func_get_args();
+
+  if ($module == 'sonar' && ($api == 'plugins')) {
+    return array('version' => 1.0);
+  }
+}
+
+/**
+ * Implements hook_ctools_plugin_type().
+ */
+function sonar_ctools_plugin_type() {
+  return array(
+    'adapter' => array(
+      'classes' => array('handler'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_ctools_plugin_directory().
+ */
+function sonar_ctools_plugin_directory($owner, $plugin_type) {
+  if ($owner == 'sonar') {
+    return "plugins/$plugin_type";
+  }
+}
+
+/**
+ * Get a Sonar handler.
+ *
+ * @param $type
+ *   The plugin type.
+ * @param $name
+ *   The name of the plugin.
+ */
+function sonar_get_handler($type, $name) {
+  $object_cache = drupal_static(__FUNCTION__);
+  if (!isset($object_cache[$name])) {
+    ctools_include('plugins');
+    $class = ctools_plugin_load_class('sonar', $type, $name, 'handler');
+    $class = class_exists($class) ? $class : 'Sonar_'.ucfirst($type).'_Broken';
+    $all_args = func_get_args();
+    $args = array_slice($all_args, 2);
+    $object_cache[$name] = new $class($name, $args);
+  }
+
+  return $object_cache[$name];
+}
